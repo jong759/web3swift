@@ -70,27 +70,54 @@ public class HDNode {
     }
 
     public init?(_ data: Data) {
-        guard data.count == 82 else {return nil}
+        guard data.count == 82 else {
+            return nil
+        }
+
         let header = data[0..<4]
         var serializePrivate = false
+
         if header == HDNode.HDversion().privatePrefix {
             serializePrivate = true
         }
-        depth = data[4..<5].bytes[0]
+
+        depth = data[4]
+
         parentFingerprint = data[5..<9]
-        childNumber = data[9..<13].bytes.withUnsafeBytes { $0.load(as: UInt32.self) }
+
+        childNumber =
+            (UInt32(data[9]) << 24) |
+            (UInt32(data[10]) << 16) |
+            (UInt32(data[11]) << 8) |
+            UInt32(data[12])
+
         chaincode = data[13..<45]
+
         if serializePrivate {
             privateKey = data[46..<78]
-            guard let pubKey = Web3.Utils.privateToPublic(privateKey!, compressed: true) else {return nil}
-            if pubKey[0] != 0x02 && pubKey[0] != 0x03 {return nil}
+
+            guard let pubKey = Web3.Utils.privateToPublic(
+                privateKey!,
+                compressed: true
+            ) else {
+                return nil
+            }
+
+            if pubKey[0] != 0x02 && pubKey[0] != 0x03 {
+                return nil
+            }
+
             publicKey = pubKey
         } else {
             publicKey = data[45..<78]
         }
+
         let hashedData = data[0..<78].sha256().sha256()
         let checksum = hashedData[0..<4]
-        if checksum != data[78..<82] {return nil}
+
+        if checksum != data[78..<82] {
+            return nil
+        }
     }
 
     public init?(seed: Data) {
@@ -105,7 +132,7 @@ public class HDNode {
         let privKeyCandidate = Data(I_L)
         guard SECP256K1.verifyPrivateKey(privateKey: privKeyCandidate) else {return nil}
         guard let pubKeyCandidate = SECP256K1.privateToPublic(privateKey: privKeyCandidate, compressed: true) else {return nil}
-        guard pubKeyCandidate.bytes[0] == 0x02 || pubKeyCandidate.bytes[0] == 0x03 else {return nil}
+        guard pubKeyCandidate[0] == 0x02 || pubKeyCandidate[0] == 0x03 else {return nil}
         publicKey = pubKeyCandidate
         privateKey = privKeyCandidate
         depth = 0x00
@@ -169,7 +196,7 @@ extension HDNode {
                 guard let privKeyCandidate = newPK.serialize().setLengthLeft(32) else {return nil}
                 guard SECP256K1.verifyPrivateKey(privateKey: privKeyCandidate) else {return nil }
                 guard let pubKeyCandidate = SECP256K1.privateToPublic(privateKey: privKeyCandidate, compressed: true) else {return nil}
-                guard pubKeyCandidate.bytes[0] == 0x02 || pubKeyCandidate.bytes[0] == 0x03 else {return nil}
+                guard pubKeyCandidate[0] == 0x02 || pubKeyCandidate[0] == 0x03 else {return nil}
                 guard self.depth < UInt8.max else {return nil}
                 let newNode = HDNode()
                 newNode.chaincode = cc
@@ -219,9 +246,9 @@ extension HDNode {
             guard let tempKey = bn.serialize().setLengthLeft(32) else {return nil}
             guard SECP256K1.verifyPrivateKey(privateKey: tempKey) else {return nil }
             guard let pubKeyCandidate = SECP256K1.privateToPublic(privateKey: tempKey, compressed: true) else {return nil}
-            guard pubKeyCandidate.bytes[0] == 0x02 || pubKeyCandidate.bytes[0] == 0x03 else {return nil}
+            guard pubKeyCandidate[0] == 0x02 || pubKeyCandidate[0] == 0x03 else {return nil}
             guard let newPublicKey = SECP256K1.combineSerializedPublicKeys(keys: [self.publicKey, pubKeyCandidate], outputCompressed: true) else {return nil}
-            guard newPublicKey.bytes[0] == 0x02 || newPublicKey.bytes[0] == 0x03 else {return nil}
+            guard newPublicKey[0] == 0x02 || newPublicKey[0] == 0x03 else {return nil}
             guard self.depth < UInt8.max else {return nil}
             let newNode = HDNode()
             newNode.chaincode = cc
