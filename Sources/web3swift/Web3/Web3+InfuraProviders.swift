@@ -283,6 +283,9 @@ public final class InfuraWebsocketProvider: WebsocketProvider {
             debugMode ? print("error: \(String(describing: error))") : nil
             websocketConnected = false
             delegate.gotError(error: error!)
+            break
+        default:
+            break
         }
     }
 
