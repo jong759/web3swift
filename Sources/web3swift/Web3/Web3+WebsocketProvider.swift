@@ -313,7 +313,7 @@ public class WebsocketProvider: Web3Provider, IWebsocketProvider, WebSocketDeleg
             delegate.gotError(error: error!)
             break
         default:
-            
+            break
         }
     }
 }
