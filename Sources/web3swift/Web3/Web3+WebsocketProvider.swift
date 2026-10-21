@@ -311,6 +311,9 @@ public class WebsocketProvider: Web3Provider, IWebsocketProvider, WebSocketDeleg
         case .error(let error):
             websocketConnected = false
             delegate.gotError(error: error!)
+            break
+        default:
+            
         }
     }
 }
